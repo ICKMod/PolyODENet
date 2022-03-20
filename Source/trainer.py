@@ -1,5 +1,4 @@
 import os
-
 import torch
 import torch.distributed as dist
 import numpy as np
@@ -27,7 +26,7 @@ class KnownTrainer:
                  n_max_reaction_order=2, n_species=3, include_zeroth_order=False,
                  include_self_reaction=False, err_thresh=1.0E-4, max_iter=1000,
                  lr=1.0E-2, weight_decay=1.0E-2, verbose=True, igpu=-1,
-                 sparsity_weight=1.0E-3):
+                 sparsity_weight=0.0):
         super(KnownTrainer, self).__init__()
         self.ode = PolynomialODE(indices, scaler, guess,
                                  n_max_reaction_order, n_species,
@@ -43,7 +42,6 @@ class KnownTrainer:
         self.weight_decay = weight_decay
         self.verbose = verbose
         self.sparsity_weight = sparsity_weight
-        self.include_sparsity = False  # sparsity_weight > 0.0
 
     def train(self, concentrations, timestamps, sum_c):
         self.par_train(-1, -1, concentrations, timestamps, sum_c)
@@ -128,12 +126,10 @@ class KnownTrainer:
                 print("Good Enough. Stop")
                 break
 
-            # loss = loss + sparse_loss() * self.sparsity_weight
+            loss = loss + sparse_loss() * self.sparsity_weight
             if world_size > 1:
                 dist.barrier()
             loss.backward()
-
-            # Step
             optimizer.step()
             if world_size > 1:
                 dist.barrier()

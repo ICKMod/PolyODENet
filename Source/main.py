@@ -32,7 +32,7 @@ def main():
                         help="Number of datasets (equal sized)")
     parser.add_argument('-o', "--output", type=str, default='net.pt',
                         help="File name to write the trained network")
-    parser.add_argument('-p', "--sparsity_weight", type=float, default=1.0E-3,
+    parser.add_argument('-p', "--sparsity_weight", type=float, default=0.0,
                         help="Weight for sparsity loss")
     parser.add_argument('-q', "--gpu_i", type=int, default=-1,
                         help="Index for GPU to use")
