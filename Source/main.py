@@ -72,7 +72,6 @@ def main():
         print('Use coefficient indices from ', args.indices)
     else:
         indices = np.array([])
-        print("hello")
     if args.scaler is not None:
         scaler = np.genfromtxt(args.scaler)
         print('Use scaler from ', args.scaler)
