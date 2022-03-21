@@ -45,27 +45,33 @@ class KnownTrainer:
 
         conserve_factor = []
         conserve_value = []
+        conserve_weight = []
         if conserve > 0:
             conserve_list = open("conserve_list", "r").readlines()
+            assert conserve <= len(conserve_list)
             print('First', conserve, 'conserve conditions from conserve_list will be used.')
         for c in range(conserve):
             conserve_line = conserve_list[c].split()
+            assert len(conserve_line) == n_species + 2
             factor = np.asarray(conserve_line[:n_species], float)
-            if os.path.exists(conserve_line[-1]):
-                value = np.genfromtxt(conserve_line[-1])
+            if os.path.exists(conserve_line[-2]):
+                value = np.genfromtxt(conserve_line[-2])
             else:
                 value = np.empty(n_data)
-                value.fill(float(conserve_line[-1]))
+                value.fill(float(conserve_line[-2]))
+            weight = float(conserve_line[-1])
             conserve_factor.append(factor)
             conserve_value.append(value)
+            conserve_weight.append(weight)
         self.conserve_factor = torch.tensor(np.array(conserve_factor), dtype=torch.float64, requires_grad=False)
         self.conserve_value = torch.tensor(np.array(conserve_value), dtype=torch.float64, requires_grad=False)
+        self.conserve_weight = torch.tensor(np.array(conserve_weight), dtype=torch.float64, requires_grad=False)
 
     def conserve_loss(self, i, predicted_c, n):
         c_loss = 0
         for c in range(len(self.conserve_factor)):
             c_ls = torch.sum(predicted_c * self.conserve_factor[c], 1) - self.conserve_value[c][i*n:i*n+n]
-            c_loss += torch.mean(torch.square(c_ls.sum()))
+            c_loss += torch.mean(torch.square(c_ls.sum())) * self.conserve_weight[c]
         return c_loss
 
     def train(self, concentrations, timestamps):
