@@ -10,12 +10,14 @@ import torch.multiprocessing as mp
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', "--conc", type=str, required=True,
-                        help="File name for concentration profile to fit")
+    parser.add_argument('-c', "--conserve", type=int, default=0,
+                        help="Number of conservation constraints")
     parser.add_argument('-d', "--weight_decay", type=float, default=1.0E-2,
                         help="Weight decay for ODE training")
     parser.add_argument('-e', "--error_thresh", type=float, default=1.0E-4,
                         help="Error threshold for loss function")
+    parser.add_argument('-f', "--file", type=str, required=True,
+                        help="File name for inupt concentration profiles")
     parser.add_argument('-g', "--guess", type=str, required=False,
                         help="File name for the initial guess")
     parser.add_argument('-i', "--indices", type=str, required=False,
@@ -42,8 +44,6 @@ def main():
                         help="File name for scaler to be applied for rate coefficients")
     parser.add_argument("--self", action='store_true',
                         help="Enable self reaction in 2nd order")
-    parser.add_argument('-sm', "--sum_c", type=str, required=False,
-                        help="File name for the combined concentrations")
     parser.add_argument('-v', "--verbose", action='store_true',
                         help="Print messages in training")
     parser.add_argument('-w', "--work_dir", type=str, default='.',
@@ -54,17 +54,23 @@ def main():
 
     world_size = args.jobs
     os.chdir(os.path.expandvars(os.path.expanduser(args.work_dir)))
-    raw_data = np.genfromtxt(args.conc)
-    print('Raw data from ', args.conc)
+    raw_data = np.genfromtxt(args.file)
+    print('Target data from ', args.file)
 
     nsets = args.nsets
+    ndata = raw_data.shape[0]
+    if ndata % nsets != 0:
+        print("Number of data points not divisible by nsets.")
+        return
+    else:
+        print(nsets, 'data sets, each of', int(ndata/nsets))
     nspecies = raw_data.shape[1] - 1
     timestamps = np.split(raw_data[:, 0], nsets)
     concentrations = np.vsplit(raw_data[:, 1:], nsets)
 
     if args.guess is not None:
         guess = np.genfromtxt(args.guess)
-        print('Initial guess from ', args.guess)
+        print('Use initial guesses from ', args.guess)
     else:
         guess = np.array([])
     if args.indices is not None:
@@ -78,18 +84,13 @@ def main():
     else:
         scaler = np.array([])
 
-    if args.sum_c is not None:
-        com_conc = np.genfromtxt(args.sum_c)
-        sum_c = np.split(com_conc, nsets)
-        print('combined concentrations from ', args.sum_c)
-    else:
-        sum_c = np.array([])
-
     trainer = KnownTrainer(indices=indices,
                            scaler=scaler,
                            guess=guess,
+                           conserve=args.conserve,
                            n_max_reaction_order=args.order,
                            n_species=nspecies,
+                           n_data=ndata,
                            include_zeroth_order=args.zeroth,
                            include_self_reaction=args.self,
                            max_iter=args.max_iter,
@@ -103,11 +104,11 @@ def main():
     t1 = datetime.datetime.now()
     if world_size <= 0:
         print("Run sequentially")
-        trainer.train(concentrations, timestamps, sum_c)
+        trainer.train(concentrations, timestamps)
     else:
         print(f"Run training with {world_size} parallel jobs")
         mp.spawn(trainer.par_train,
-                 args=(world_size, concentrations, timestamps, sum_c),
+                 args=(world_size, concentrations, timestamps),
                  nprocs=world_size,
                  join=True)
     t2 = datetime.datetime.now()

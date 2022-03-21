@@ -22,8 +22,8 @@ def dist_cleanup():
 
 class KnownTrainer:
 
-    def __init__(self, indices, scaler, guess,
-                 n_max_reaction_order=2, n_species=3, include_zeroth_order=False,
+    def __init__(self, indices, scaler, guess, conserve,
+                 n_max_reaction_order=2, n_species=3, n_data=0, include_zeroth_order=False,
                  include_self_reaction=False, err_thresh=1.0E-4, max_iter=1000,
                  lr=1.0E-2, weight_decay=1.0E-2, verbose=True, igpu=-1,
                  sparsity_weight=0.0):
@@ -43,10 +43,35 @@ class KnownTrainer:
         self.verbose = verbose
         self.sparsity_weight = sparsity_weight
 
-    def train(self, concentrations, timestamps, sum_c):
-        self.par_train(-1, -1, concentrations, timestamps, sum_c)
+        conserve_factor = []
+        conserve_value = []
+        if conserve > 0:
+            conserve_list = open("conserve_list", "r").readlines()
+            print('First', conserve, 'conserve conditions from conserve_list will be used.')
+        for c in range(conserve):
+            conserve_line = conserve_list[c].split()
+            factor = np.asarray(conserve_line[:n_species], float)
+            if os.path.exists(conserve_line[-1]):
+                value = np.genfromtxt(conserve_line[-1])
+            else:
+                value = np.empty(n_data)
+                value.fill(float(conserve_line[-1]))
+            conserve_factor.append(factor)
+            conserve_value.append(value)
+        self.conserve_factor = torch.tensor(np.array(conserve_factor), dtype=torch.float64, requires_grad=False)
+        self.conserve_value = torch.tensor(np.array(conserve_value), dtype=torch.float64, requires_grad=False)
 
-    def par_train(self, rank, world_size, concentrations, timestamps, sum_c):
+    def conserve_loss(self, i, predicted_c, n):
+        c_loss = 0
+        for c in range(len(self.conserve_factor)):
+            c_ls = torch.sum(predicted_c * self.conserve_factor[c], 1) - self.conserve_value[c][i*n:i*n+n]
+            c_loss += torch.mean(torch.square(c_ls.sum()))
+        return c_loss
+
+    def train(self, concentrations, timestamps):
+        self.par_train(-1, -1, concentrations, timestamps)
+
+    def par_train(self, rank, world_size, concentrations, timestamps):
         if world_size > 1:
             print(f"Enter training on rank {rank}")
             dist_setup(rank, world_size)
@@ -55,15 +80,14 @@ class KnownTrainer:
             worker_ode = self.ode
 
         tensor_concentrations = torch.tensor(np.array(concentrations), dtype=torch.float64, requires_grad=False)
-        sum_c = torch.tensor(sum_c, dtype=torch.float64, requires_grad=False)
         tensor_timestamps = torch.tensor(np.array(timestamps), dtype=torch.float64, requires_grad=False)
+        set_size = tensor_timestamps.size(dim=1)
         rate_coeff_params = list(worker_ode.parameters())[0]
 
         optimizer = optim.AdamW(worker_ode.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=50)
 
         tensor_concentrations = tensor_concentrations.to(self.device)
-        sum_c = sum_c.to(self.device)
         tensor_timestamps = tensor_timestamps.to(self.device)
 
         def sparse_loss():
@@ -71,31 +95,22 @@ class KnownTrainer:
             # return torch.mean(torch.log(bw_abs / bw_abs.sum(dim=0) + 1.0).sum(dim=0))
             return bw_abs.sum()
 
-        def conserve_loss(t, predicted_c):
-            if len(sum_c) == 0:
-                c_loss = 0
-            else:
-                sum_cr = torch.reshape(sum_c[t], (sum_c[t].size()[0], 1))
-                sum_c_ls = torch.cat((predicted_c[:, -2:], -sum_cr), 1)
-                c_loss = torch.mean(torch.square(sum_c_ls.sum()))
-            return c_loss
-
         def loss_func():
             # # The loss function: 1) only compare data with known values, i.e. not -1;
             # #                    2) concentrations cannot be negative;
             #                      3) conservation or summation constraints.
             ls = 0.0
 
-            for t in range(len(timestamps)):
-                if world_size > 1 and t % world_size != rank:
+            for i_set in range(len(timestamps)):
+                if world_size > 1 and i_set % world_size != rank:
                     continue
                 try:
-                    tensor_c0 = tensor_concentrations[t][0, :]
-                    target = tensor_concentrations[t]
-                    predicted_c = odeint(worker_ode, tensor_c0, tensor_timestamps[t])
+                    tensor_c0 = tensor_concentrations[i_set][0, :]
+                    target = tensor_concentrations[i_set]
+                    predicted_c = odeint(worker_ode, tensor_c0, tensor_timestamps[i_set])
                     ls = ls + torch.mean(torch.square((predicted_c - target)[target > -0.1]))
                     ls = ls + predicted_c[predicted_c < 0.0].abs().sum()
-                    #  ls = ls + conserve_loss(t, predicted_c)
+                    ls = ls + self.conserve_loss(i_set, predicted_c, set_size)
                 except AssertionError as ex:
                     if "underflow" in ex.args[0]:
                         print("loss underflow, use sparse loss ")
