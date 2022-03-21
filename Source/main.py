@@ -62,7 +62,7 @@ def main():
         return
     else:
         print(n_sets, 'data sets, each of', int(n_data/n_sets))
-    nspecies = raw_data.shape[1] - 1
+    n_species = raw_data.shape[1] - 1
     timestamps = np.split(raw_data[:, 0], n_sets)
     concentrations = np.vsplit(raw_data[:, 1:], n_sets)
 
@@ -87,7 +87,7 @@ def main():
                            guess=guess,
                            conserve=args.conserve,
                            n_max_reaction_order=args.order,
-                           n_species=nspecies,
+                           n_species=n_species,
                            n_data=n_data,
                            include_zeroth_order=args.zeroth,
                            include_self_reaction=args.self,
@@ -110,11 +110,10 @@ def main():
                  nprocs=world_size,
                  join=True)
     t2 = datetime.datetime.now()
+    print(f"Total {(t2 - t1).seconds + (t2 - t1).microseconds * 1.0E-6 :.2f}s used in training")
 
     np.set_printoptions(precision=4)
     print(trainer.ode.basis_weights.data.numpy())
-    print(f"Total {(t2 - t1).seconds + (t2 - t1).microseconds * 1.0E-6 :.2f}s used in training")
-
     torch.save(trainer.ode, args.name+'.pt')
     plot_write_ode(trainer.ode, concentrations, timestamps, args.name, trainer.device)
 
