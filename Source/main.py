@@ -17,11 +17,11 @@ def main():
     parser.add_argument('-e', "--error_thresh", type=float, default=1.0E-4,
                         help="Error threshold for loss function")
     parser.add_argument('-f', "--file", type=str, required=True,
-                        help="File name for inupt concentration profiles")
+                        help="File name for input concentration profiles")
     parser.add_argument('-g', "--guess", type=str, required=False,
-                        help="File name for the initial guess")
+                        help="File name for the initial guesses")
     parser.add_argument('-i', "--indices", type=str, required=False,
-                        help="Filename for rate coefficient indices")
+                        help="File name for rate coefficient indices")
     parser.add_argument('-j', "--jobs", type=int, default=-1,
                         help="Number of parallel jobs")
     parser.add_argument('-l', "--lr", type=float, default=1.0E-2,
@@ -30,10 +30,8 @@ def main():
                         help="Maximum number of iterations")
     parser.add_argument("--name", type=str, default='test',
                         help="The name of this training")
-    parser.add_argument('-n', "--nsets", type=int, default=1,
+    parser.add_argument('-n', "--n_sets", type=int, default=1,
                         help="Number of datasets (equal sized)")
-    parser.add_argument('-o', "--output", type=str, default='net.pt',
-                        help="File name to write the trained network")
     parser.add_argument('-p', "--sparsity_weight", type=float, default=0.0,
                         help="Weight for sparsity loss")
     parser.add_argument('-q', "--gpu_i", type=int, default=-1,
@@ -43,13 +41,13 @@ def main():
     parser.add_argument('-s', "--scaler", type=str, required=False,
                         help="File name for scaler to be applied for rate coefficients")
     parser.add_argument("--self", action='store_true',
-                        help="Enable self reaction in 2nd order")
+                        help="Add 2nd order self reaction terms")
     parser.add_argument('-v', "--verbose", action='store_true',
                         help="Print messages in training")
     parser.add_argument('-w', "--work_dir", type=str, default='.',
                         help="Working directory")
-    parser.add_argument('-z', "--zeroth", action='store_true',
-                        help="Enable 0th order term")
+    parser.add_argument("--zeroth", action='store_true',
+                        help="Add 0th order terms")
     args = parser.parse_args()
 
     world_size = args.jobs
@@ -57,16 +55,16 @@ def main():
     raw_data = np.genfromtxt(args.file)
     print('Target data from ', args.file)
 
-    nsets = args.nsets
-    ndata = raw_data.shape[0]
-    if ndata % nsets != 0:
-        print("Number of data points not divisible by nsets.")
+    n_sets = args.n_sets
+    n_data = raw_data.shape[0]
+    if n_data % n_sets != 0:
+        print("Number of data points not divisible by n_sets.")
         return
     else:
-        print(nsets, 'data sets, each of', int(ndata/nsets))
+        print(n_sets, 'data sets, each of', int(n_data/n_sets))
     nspecies = raw_data.shape[1] - 1
-    timestamps = np.split(raw_data[:, 0], nsets)
-    concentrations = np.vsplit(raw_data[:, 1:], nsets)
+    timestamps = np.split(raw_data[:, 0], n_sets)
+    concentrations = np.vsplit(raw_data[:, 1:], n_sets)
 
     if args.guess is not None:
         guess = np.genfromtxt(args.guess)
@@ -90,7 +88,7 @@ def main():
                            conserve=args.conserve,
                            n_max_reaction_order=args.order,
                            n_species=nspecies,
-                           n_data=ndata,
+                           n_data=n_data,
                            include_zeroth_order=args.zeroth,
                            include_self_reaction=args.self,
                            max_iter=args.max_iter,
@@ -117,7 +115,7 @@ def main():
     print(trainer.ode.basis_weights.data.numpy())
     print(f"Total {(t2 - t1).seconds + (t2 - t1).microseconds * 1.0E-6 :.2f}s used in training")
 
-    torch.save(trainer.ode, args.output)
+    torch.save(trainer.ode, args.name+'.pt')
     plot_write_ode(trainer.ode, concentrations, timestamps, args.name, trainer.device)
 
 
