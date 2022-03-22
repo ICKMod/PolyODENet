@@ -56,6 +56,7 @@ class KnownTrainer:
             factor = np.asarray(conserve_line[:n_species], float)
             if os.path.exists(conserve_line[-2]):
                 value = np.genfromtxt(conserve_line[-2])
+                assert value.size == n_data
             else:
                 value = np.empty(n_data)
                 value.fill(float(conserve_line[-2]))
@@ -138,7 +139,7 @@ class KnownTrainer:
             if world_size > 1:
                 dist.all_reduce(loss)
                 dist.barrier()
-            if self.verbose or itr % 10 == 0:
+            if self.verbose or itr % 50 == 0:
                 if rank == 0 or rank == -1:
                     print('{}Iter {:04d} | Total Loss {:.6f} | Sparse Loss {:.6f}'
                           .format("" if world_size < 1 else f"\nRank {rank}, ",

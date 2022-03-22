@@ -36,11 +36,10 @@ def plot_write_ode(ode, real_concentrations, real_timestamps, name, device):
         plt.ylabel("Concentration")
         plt.ylim(bottom=-0.1)
         plt.legend()
-        title = f'Plot_of_{name}_{i}'
+        title = f'Plot_of_{name}_set_{i}'
         plt.title(title)
         plt.savefig(f"{title}.jpg", dpi=300)
 
         pred_df = pd.DataFrame(data=np.hstack([timestamps[:, np.newaxis], pred_conc]),
                                columns=["## Time"] + [f'Set {j + 1} ' for j in range(pred_conc.shape[1])])
-        pred_df.to_csv(f"Predicted_Concentrations_of_{name}_{i}.csv", sep='\t', index=False, float_format='%8.6f')
-
+        pred_df.to_csv(f"Predicted_Concentrations_of_{name}_set_{i}.csv", sep='\t', index=False, float_format='%8.6f')

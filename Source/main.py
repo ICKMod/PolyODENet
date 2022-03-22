@@ -53,7 +53,7 @@ def main():
     world_size = args.jobs
     os.chdir(os.path.expandvars(os.path.expanduser(args.work_dir)))
     raw_data = np.genfromtxt(args.file)
-    print('Target data from ', args.file)
+    print('Target data from', args.file)
 
     n_sets = args.n_sets
     n_data = raw_data.shape[0]
