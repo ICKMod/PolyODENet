@@ -14,7 +14,7 @@ def main():
                         help="Number of conservation constraints")
     parser.add_argument('-d', "--weight_decay", type=float, default=1.0E-2,
                         help="Weight decay for ODE training")
-    parser.add_argument('-e', "--error_thresh", type=float, default=1.0E-4,
+    parser.add_argument('-e', "--error_thresh", type=float, default=5.0E-4,
                         help="Error threshold for loss function")
     parser.add_argument('-f', "--file", type=str, required=True,
                         help="File name for input concentration profiles")

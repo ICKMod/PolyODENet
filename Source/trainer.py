@@ -139,14 +139,18 @@ class KnownTrainer:
             if world_size > 1:
                 dist.all_reduce(loss)
                 dist.barrier()
-            if self.verbose or itr % 50 == 0:
+            if loss.item() < self.err_thresh:
                 if rank == 0 or rank == -1:
                     print('{}Iter {:04d} | Total Loss {:.6f} | Sparse Loss {:.6f}'
                           .format("" if world_size < 1 else f"\nRank {rank}, ",
                                   itr, loss.item(), sparse_loss()))
-            if loss.item() < self.err_thresh:
-                print("Good Enough. Stop")
+                    print("Good Enough. Stop")
                 break
+            elif self.verbose or itr % 20 == 0:
+                if rank == 0 or rank == -1:
+                    print('{}Iter {:04d} | Total Loss {:.6f} | Sparse Loss {:.6f}'
+                          .format("" if world_size < 1 else f"\nRank {rank}, ",
+                                  itr, loss.item(), sparse_loss()))
 
             loss = loss + sparse_loss() * self.sparsity_weight
             if world_size > 1:
