@@ -18,17 +18,17 @@ def main():
                         help="Error threshold for loss function")
     parser.add_argument('-f', "--file", type=str, required=True,
                         help="File name for input concentration profiles")
-    parser.add_argument('-g', "--guess", type=str, required=False,
-                        help="File name for the initial guesses")
-    parser.add_argument('-i', "--indices", type=str, required=False,
-                        help="File name for rate coefficient indices")
+    parser.add_argument('-g', "--guess", action='store_true',
+                        help="Use initial guesses from .guess file")
+    parser.add_argument('-i', "--indices", action='store_true',
+                        help="Use rate coefficient indices from .ind file")
     parser.add_argument('-j', "--jobs", type=int, default=-1,
                         help="Number of parallel jobs")
     parser.add_argument('-l', "--lr", type=float, default=1.0E-2,
                         help="Learning rate for ODE training")
     parser.add_argument('-m', "--max_iter", type=int, default=100,
                         help="Maximum number of iterations")
-    parser.add_argument("--name", type=str, default='test',
+    parser.add_argument('-N', "--name", type=str, required=True,
                         help="The name of this training")
     parser.add_argument('-n', "--n_sets", type=int, default=1,
                         help="Number of datasets (equal sized)")
@@ -38,8 +38,8 @@ def main():
                         help="Index for GPU to use")
     parser.add_argument('-r', "--order", type=int, default=1,
                         help="Reaction order")
-    parser.add_argument('-s', "--scaler", type=str, required=False,
-                        help="File name for scaler to be applied for rate coefficients")
+    parser.add_argument('-s', "--scaler", action='store_true',
+                        help="Use rate coefficients scalers from .scale file")
     parser.add_argument("--self", action='store_true',
                         help="Add 2nd order self reaction terms")
     parser.add_argument('-v', "--verbose", action='store_true',
@@ -66,19 +66,19 @@ def main():
     timestamps = np.split(raw_data[:, 0], n_sets)
     concentrations = np.vsplit(raw_data[:, 1:], n_sets)
 
-    if args.guess is not None:
-        guess = np.genfromtxt(args.guess)
-        print('Use initial guesses from ', args.guess)
+    if args.guess:
+        guess = np.genfromtxt(args.name+'.guess')
+        print('Use initial guesses from ', args.name+'.guess')
     else:
         guess = np.array([])
-    if args.indices is not None:
-        indices = np.genfromtxt(args.indices)
-        print('Use coefficient indices from ', args.indices)
+    if args.indices:
+        indices = np.genfromtxt(args.name+'.ind')
+        print('Use coefficient indices from ', args.name+'.ind')
     else:
         indices = np.array([])
-    if args.scaler is not None:
-        scaler = np.genfromtxt(args.scaler)
-        print('Use scaler from ', args.scaler)
+    if args.scaler:
+        scaler = np.genfromtxt(args.name+'.scale')
+        print('Use scaler from ', args.name+'.scale')
     else:
         scaler = np.array([])
 
