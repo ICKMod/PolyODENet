@@ -1,6 +1,6 @@
 # PolyODENet
 
-Inverse chemical kinetics modeling using ODENet.
+###Inverse chemical kinetics modeling using ODENet.
 
 The initial effort will focus on deriving chemical 
 rate equations from concentration time-series data 
@@ -17,3 +17,12 @@ The following tools/principles are used.
 3. Sparse regression
 
 4. Knowledge of kinetic differential equations
+
+### Code installation
+After download the code, you can do the following
+```commandline
+python3 -m venv pon-env
+source pon-evn/bin/activate
+python setup.py
+```
+This should set 'train_poly' in your $PATH to use.
