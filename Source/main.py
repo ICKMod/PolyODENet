@@ -1,6 +1,6 @@
 import argparse
-from trainer import KnownTrainer
-from visualize import plot_write_ode
+from Source.trainer import KnownTrainer
+from Source.visualize import plot_write_ode
 import numpy as np
 import os
 import torch

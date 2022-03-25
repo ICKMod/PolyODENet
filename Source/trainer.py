@@ -6,7 +6,7 @@ from torch import optim
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torchdiffeq import odeint_adjoint as odeint
 
-from polyode import PolynomialODE
+from Source.polyode import PolynomialODE
 
 
 def dist_setup(rank, world_size):
@@ -72,7 +72,7 @@ class KnownTrainer:
         c_loss = 0
         for c in range(len(self.conserve_factor)):
             c_ls = torch.sum(predicted_c * self.conserve_factor[c], 1) - self.conserve_value[c][i*n:i*n+n]
-            c_loss += torch.mean(torch.square(c_ls.sum())) * self.conserve_weight[c]
+            c_loss += torch.mean(torch.square(c_ls)) * self.conserve_weight[c]
         return c_loss
 
     def train(self, concentrations, timestamps):
