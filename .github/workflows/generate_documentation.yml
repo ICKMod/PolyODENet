@@ -1,7 +1,7 @@
 name: PolyODENet_documentation
 
 on:
-  merge:
+  push:
     branches:
       - master
 
