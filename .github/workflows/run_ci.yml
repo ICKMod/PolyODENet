@@ -44,7 +44,7 @@ jobs:
       - name: run-tests
         run: |
               cd Tests
-              pytest --cov=.. --cov-report=xml
+              pytest --cov=. --cov-report=xml
               pwd
               ls -l
               cd ..
@@ -57,7 +57,7 @@ jobs:
           directory: ./Tests
           env_vars: OS,PYTHON
           fail_ci_if_error: true
-          files: ./Tests/converage.xml
+          files: ./Tests/coverage.xml
           flags: unittests
           name: PolyODENet
           verbose: true
