@@ -45,6 +45,8 @@ jobs:
         run: |
               cd Tests
               pytest --cov=.. --cov-report=xml
+              cd ..
+              ls -l
       - name: publish-coverage
         uses: codecov/codecov-action@v2
         with:
@@ -55,5 +57,4 @@ jobs:
           files: ./converage1.xml
           flags: unittests
           name: PolyODENet
-          path_to_write_report: ./coverage/codecov_report.txt
           verbose: true
