@@ -45,16 +45,19 @@ jobs:
         run: |
               cd Tests
               pytest --cov=.. --cov-report=xml
+              pwd
+              ls -l
               cd ..
+              pwd
               ls -l
       - name: publish-coverage
         uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          directory: ./coverage/reports/
+          directory: ./Tests
           env_vars: OS,PYTHON
           fail_ci_if_error: true
-          files: ./converage1.xml
+          files: ./Tests/converage.xml
           flags: unittests
           name: PolyODENet
           verbose: true
