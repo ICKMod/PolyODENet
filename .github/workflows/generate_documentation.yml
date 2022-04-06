@@ -29,5 +29,5 @@ jobs:
       - name: pub-documentation
         uses: peaceiris/actions-gh-pages@v3
         with:
-              personal_token: ${{ secrets.PUBLISH_DOCUMENTATION_TOKEN }}
+              personal_token: ${{ secrets.GITHUB_TOKEN }}
               publish_dir: ./Documentation_html/html
