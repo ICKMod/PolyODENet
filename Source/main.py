@@ -113,7 +113,7 @@ def main():
     print(f"Total {(t2 - t1).seconds + (t2 - t1).microseconds * 1.0E-6 :.2f}s used in training")
 
     np.set_printoptions(precision=4)
-    print(trainer.ode.basis_weights.data.numpy())
+    print(trainer.ode.basis_weights.data.cpu().numpy())
     torch.save(trainer.ode, args.name+'.pt')
     plot_write_ode(trainer.ode, concentrations, timestamps, args.name, trainer.device)
 
