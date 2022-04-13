@@ -28,14 +28,15 @@ class KnownTrainer:
                  lr=1.0E-2, weight_decay=1.0E-2, verbose=True, igpu=-1,
                  sparsity_weight=0.0):
         super(KnownTrainer, self).__init__()
-        self.ode = PolynomialODE(indices, scaler, guess,
-                                 n_max_reaction_order, n_species,
-                                 include_zeroth_order, include_self_reaction)
         if igpu >= 0:
             self.device = torch.device(f'cuda:{igpu}')
         else:
             self.device = torch.device('cpu')
-        self.ode.to(self.device)
+        self.ode = PolynomialODE(indices, scaler, guess,
+                                 n_max_reaction_order, n_species,
+                                 include_zeroth_order, include_self_reaction,
+                                 self.device)
+        
         self.err_thresh = err_thresh
         self.max_iter = max_iter
         self.lr = lr
