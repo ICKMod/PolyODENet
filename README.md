@@ -22,7 +22,7 @@ The following tools/principles are used.
 After download the code, you can do the following
 ```commandline
 python3 -m venv pon-env
-source pon-evn/bin/activate
+source pon-env/bin/activate
 python setup.py develop
 ```
 This should set 'train_poly' in your $PATH to use.
