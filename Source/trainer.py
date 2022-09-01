@@ -90,9 +90,9 @@ class KnownTrainer:
         tensor_concentrations = torch.tensor(np.array(concentrations), dtype=torch.float64, requires_grad=False)
         tensor_timestamps = torch.tensor(np.array(timestamps), dtype=torch.float64, requires_grad=False)
         set_size = tensor_timestamps.size(dim=1)
-        rate_coeff_params = list(worker_ode.parameters())[0]
+        rate_coeff_params = worker_ode._basis_weights
 
-        optimizer = optim.AdamW(worker_ode.parameters(), lr=self.lr, weight_decay=self.weight_decay)
+        optimizer = optim.AdamW([rate_coeff_params], lr=self.lr, weight_decay=self.weight_decay)
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=50)
 
         tensor_concentrations = tensor_concentrations.to(self.device)
@@ -115,7 +115,7 @@ class KnownTrainer:
                 try:
                     tensor_c0 = tensor_concentrations[i_set][0, :]
                     target = tensor_concentrations[i_set]
-                    predicted_c = odeint(worker_ode, tensor_c0, tensor_timestamps[i_set])
+                    predicted_c = odeint(worker_ode, tensor_c0, tensor_timestamps[i_set], adjoint_params=[rate_coeff_params])
                     ls = ls + torch.mean(torch.square((predicted_c - target)[target > -0.1]))
                     ls = ls + predicted_c[predicted_c < 0.0].abs().sum()
                     ls = ls + self.conserve_loss(i_set, predicted_c, set_size)

@@ -32,7 +32,7 @@ class PolynomialODE(nn.Module):
             repeat(self.exponent_indices.shape[0], axis=0)
         bw = torch.zeros(self.exponent_indices.shape[0], n_species,
                          dtype=torch.float64, requires_grad=True, device=device)
-        self._basis_weights = nn.Parameter(bw, requires_grad=True)
+        self._basis_weights = bw
         if guess.size > 0:
             self._basis_weights.data = torch.tensor(guess, dtype=torch.float64, requires_grad=True, device=device)
         else:
