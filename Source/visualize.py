@@ -11,7 +11,7 @@ from Source.polyode import PolynomialODE
 
 def compute_coeff_jacobian(ode, t, tensor_conc0, i_specie):
     def jac_func(bw):
-        assert (ode._basis_weights == bw).all()
+        ode._basis_weights = bw
         pc = odeint(ode, tensor_conc0, t, adjoint_params=[bw])
         return pc
     all_c_jacobian = jacobian(jac_func, ode._basis_weights)
