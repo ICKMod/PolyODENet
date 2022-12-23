@@ -10,7 +10,8 @@ from torchdiffeq import odeint_adjoint as odeint
 class PolynomialODE(nn.Module):
     def __init__(self, indices, scaler, guess,
                  n_max_reaction_order=2, n_species=3,
-                 include_zeroth_order=False, include_self_reaction=False):
+                 include_zeroth_order=False, include_self_reaction=False,
+                 device=torch.device('cpu')):
         super(PolynomialODE, self).__init__()
         self.n_max_reaction_order = n_max_reaction_order
         self.n_species = n_species
@@ -30,10 +31,10 @@ class PolynomialODE(nn.Module):
             reshape([1, n_species]). \
             repeat(self.exponent_indices.shape[0], axis=0)
         bw = torch.zeros(self.exponent_indices.shape[0], n_species,
-                         dtype=torch.float64, requires_grad=True)
+                         dtype=torch.float64, requires_grad=True, device=device)
         self._basis_weights = nn.Parameter(bw, requires_grad=True)
         if guess.size > 0:
-            self._basis_weights.data = torch.tensor(guess, dtype=torch.float64, requires_grad=True)
+            self._basis_weights.data = torch.tensor(guess, dtype=torch.float64, requires_grad=True, device=device)
         else:
             torch.nn.init.xavier_normal_(self._basis_weights, gain=0.5)
             # torch.nn.init.sparse_(self.basis_weights, sparsity=0.75, std=0.1)
@@ -46,9 +47,9 @@ class PolynomialODE(nn.Module):
                 repeat(self.exponent_indices.shape[1], axis=1)
             self.col_indices = self.species_indices
         if scaler.size > 0:
-            self.scaler = torch.tensor(scaler, dtype=torch.float64)
+            self.scaler = torch.tensor(scaler, dtype=torch.float64, device=device)
         else:
-            self.scaler = torch.ones(self.exponent_indices.shape, dtype=torch.float64)
+            self.scaler = torch.ones(self.exponent_indices.shape, dtype=torch.float64, device=device)
 
     @property
     def basis_weights(self):

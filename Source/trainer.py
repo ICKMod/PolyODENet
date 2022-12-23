@@ -28,14 +28,15 @@ class KnownTrainer:
                  lr=1.0E-2, weight_decay=1.0E-2, verbose=True, igpu=-1,
                  sparsity_weight=0.0):
         super(KnownTrainer, self).__init__()
-        self.ode = PolynomialODE(indices, scaler, guess,
-                                 n_max_reaction_order, n_species,
-                                 include_zeroth_order, include_self_reaction)
         if igpu >= 0:
             self.device = torch.device(f'cuda:{igpu}')
         else:
             self.device = torch.device('cpu')
-        self.ode.to(self.device)
+        self.ode = PolynomialODE(indices, scaler, guess,
+                                 n_max_reaction_order, n_species,
+                                 include_zeroth_order, include_self_reaction,
+                                 self.device)
+        
         self.err_thresh = err_thresh
         self.max_iter = max_iter
         self.lr = lr
@@ -167,13 +168,13 @@ class KnownTrainer:
                 break
 
             #  Make sure there is no negative cross effect.
-            clamp_idx = (self.ode.exponent_indices == 0) & (rate_coeff_params.detach().numpy() < 0)
-            clamp_idx = torch.tensor(clamp_idx)
+            clamp_idx = (self.ode.exponent_indices == 0) & (rate_coeff_params.detach().cpu().numpy() < 0)
+            clamp_idx = torch.tensor(clamp_idx, device=self.device)
             rate_coeff_params.data[clamp_idx] = 0
 
             #  Assume no auto-catalytic reactions
-            clamp_idx = (self.ode.exponent_indices != 0) & (rate_coeff_params.detach().numpy() > 0)
-            clamp_idx = torch.tensor(clamp_idx)
+            clamp_idx = (self.ode.exponent_indices != 0) & (rate_coeff_params.detach().cpu().numpy() > 0)
+            clamp_idx = torch.tensor(clamp_idx, device=self.device)
             rate_coeff_params.data[clamp_idx] = 0
 
         # print(rate_coeff_params.grad.numpy())

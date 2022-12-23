@@ -8,10 +8,8 @@ import string
 
 
 def plot_write_ode(ode, real_concentrations, real_timestamps, name, device):
-    tensor_concentrations = torch.tensor(np.array(real_concentrations), dtype=torch.float64, requires_grad=False)
-    tensor_timestamps = torch.tensor(np.array(real_timestamps), dtype=torch.float64, requires_grad=False)
-    tensor_concentrations.to(device)
-    tensor_timestamps.to(device)
+    tensor_concentrations = torch.tensor(np.array(real_concentrations), dtype=torch.float64, requires_grad=False, device=device)
+    tensor_timestamps = torch.tensor(np.array(real_timestamps), dtype=torch.float64, requires_grad=False, device=device)
 
     with open(f"Rate_equations_of_{name}.txt", "w") as f:
         f.write(str(ode))
