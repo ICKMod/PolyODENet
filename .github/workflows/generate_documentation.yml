@@ -1,0 +1,33 @@
+name: PolyODENet_documentation
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - name: upgrade-pip
+        run: |
+              python -m pip install --upgrade pip
+              python -m pip install wheel
+      - name: get-doxygen
+        run: |
+              apt-get install doxygen
+      - name: get-graphviz
+        run: |
+              pip install graphviz
+      - name: gen-documentation
+        run: |
+              doxygen Doxygen/Doxyfile
+      - name: pub-documentation
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+              personal_token: ${{ secrets.GITHUB_TOKEN }}
+              publish_dir: ./Documentation_html/html
