@@ -1,0 +1,63 @@
+name: PolyODENet_CI
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: get-python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - name: upgrade-pip
+        run: |
+              python -m pip install --upgrade pip
+              python -m pip install wheel
+      - name: get-numpy
+        run: |
+              pip install numpy
+      - name: get-pytorch
+        run: |
+              pip install torch==1.11.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+      - name: get-torchdiffeq
+        run: |
+              git clone https://github.com/rtqichen/torchdiffeq
+              cd torchdiffeq
+              python setup.py install
+      - name: get-pytest
+        run: |
+              pip install -U pytest
+              pip install -U pytest-cov
+              pytest --version
+      - name: install-PolyODENet
+        run: |
+              python setup.py install
+      - name: run-tests
+        run: |
+              cd Tests
+              pytest --cov=. --cov-report=xml
+              pwd
+              ls -l
+              cd ..
+              pwd
+              ls -l
+      # - name: publish-coverage
+      #   uses: codecov/codecov-action@v2
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     directory: ./Tests
+      #     env_vars: OS,PYTHON
+      #     fail_ci_if_error: true
+      #     files: ./Tests/coverage.xml
+      #     flags: unittests
+      #     name: PolyODENet
+      #     verbose: true

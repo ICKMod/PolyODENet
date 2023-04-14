@@ -3,12 +3,27 @@ from Source.trainer import KnownTrainer
 from Source.visualize import plot_write_ode
 import numpy as np
 import os
+import sys
 import torch
 import datetime
 import torch.multiprocessing as mp
 
 
 def main():
+    '''
+    Main and Do_it construct.
+
+    Introducing this two level approach allows the code to be run in two
+    different ways:
+    - From the command line when the main function will pass the system
+      command line arguments.
+    - From inside another Python script when the do_it function can have an
+      artificial set of command line arguments passed to it.
+    The latter approach is a way to run test cases with, e.g. pytest.
+    '''
+    do_it(sys.argv[1:])
+
+def do_it(arguments):
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', "--conserve", type=int, default=0,
                         help="Number of conservation constraints")
@@ -48,7 +63,7 @@ def main():
                         help="Working directory")
     parser.add_argument("--zeroth", action='store_true',
                         help="Add 0th order terms")
-    args = parser.parse_args()
+    args = parser.parse_args(arguments)
 
     world_size = args.jobs
     os.chdir(os.path.expandvars(os.path.expanduser(args.work_dir)))
@@ -116,6 +131,7 @@ def main():
     print(trainer.ode.basis_weights.data.cpu().numpy())
     torch.save(trainer.ode, args.name+'.pt')
     plot_write_ode(trainer.ode, concentrations, timestamps, args.name, trainer.device)
+    return trainer.ode.basis_weights.data.numpy()
 
 
 if __name__ == '__main__':
